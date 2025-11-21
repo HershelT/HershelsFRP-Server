@@ -1,0 +1,128 @@
+# FRP Server Configuration for HershelsFRP
+# Location: /etc/frp/frps.toml (on your Azure VM)
+# Version: FRP 0.61.0+
+
+# ============================================================
+# Core Server Settings
+# ============================================================
+
+# Bind address - 0.0.0.0 means listen on all interfaces
+bindAddr = "0.0.0.0"
+
+# Control port - clients connect here for tunnel management
+bindPort = 7000
+
+# ============================================================
+# HTTP/HTTPS Virtual Host Settings
+# ============================================================
+
+# Internal HTTP port - Caddy will reverse proxy to this
+# This is NOT exposed to the internet directly
+vhostHTTPPort = 8080
+
+# HTTPS is handled by Caddy, not FRP
+# vhostHTTPSPort = 8443  # Not needed - Caddy handles SSL
+
+# ============================================================
+# Multi-Tenant Subdomain Support
+# THIS IS THE KEY SETTING for custom subdomains
+# ============================================================
+
+# Base domain for all tunnels
+# Clients requesting subdomain "alice-myapp-api" will get:
+# https://alice-myapp-api.tunnel.hershel.dev
+subDomainHost = "tunnel.hershel.dev"
+
+# ============================================================
+# Authentication - CRITICAL FOR SECURITY
+# ============================================================
+
+auth.method = "token"
+
+# CHANGE THIS TOKEN! Generate a secure random token:
+# openssl rand -base64 32
+auth.token = "CHANGE-ME-TO-A-SECURE-RANDOM-TOKEN"
+
+# Alternative: Load token from file (more secure)
+# auth.additionalScopes = ["HeartBeats"]
+# auth.token = ""  # Leave empty if using file
+
+# ============================================================
+# Security & Rate Limiting
+# ============================================================
+
+# Maximum connections per client
+transport.maxPoolCount = 5
+
+# Maximum ports each client can forward
+maxPortsPerClient = 10
+
+# Heartbeat settings - detect dead connections
+transport.heartbeatTimeout = 90  # seconds
+
+# ============================================================
+# Web Dashboard (Optional)
+# ============================================================
+
+# Enable dashboard for monitoring
+webServer.addr = "127.0.0.1"  # Only accessible via localhost (use SSH tunnel)
+webServer.port = 7500
+webServer.user = "admin"
+webServer.password = "CHANGE-THIS-PASSWORD"  # CHANGE THIS!
+
+# ============================================================
+# Logging
+# ============================================================
+
+log.to = "/var/log/frp/frps.log"
+log.level = "info"
+log.maxDays = 7
+
+# ============================================================
+# Optional: Advanced Settings
+# ============================================================
+
+# Allow specific ports only (security)
+# Uncomment to restrict which local ports can be tunneled
+# allowPorts = [
+#   { start = 3000, end = 9999 }  # Common dev ports only
+# ]
+
+# TCP multiplexing (better performance)
+transport.tcpMux = true
+
+# Bandwidth limiting per client (optional)
+# transport.maxBandwidthPerClient = "10MB"
+
+# ============================================================
+# SETUP INSTRUCTIONS
+# ============================================================
+#
+# 1. Install FRP on your Azure VM:
+#    wget https://github.com/fatedier/frp/releases/download/v0.61.0/frp_0.61.0_linux_amd64.tar.gz
+#    tar -xzf frp_0.61.0_linux_amd64.tar.gz
+#    sudo cp frp_0.61.0_linux_amd64/frps /usr/local/bin/
+#
+# 2. Copy this file to /etc/frp/frps.toml:
+#    sudo mkdir -p /etc/frp
+#    sudo cp frps.toml /etc/frp/
+#
+# 3. CHANGE THE AUTH TOKEN AND DASHBOARD PASSWORD ABOVE!
+#
+# 4. Create log directory:
+#    sudo mkdir -p /var/log/frp
+#
+# 5. Create systemd service (see setup-frps-service.sh)
+#
+# 6. Start service:
+#    sudo systemctl enable frps
+#    sudo systemctl start frps
+#    sudo systemctl status frps
+#
+# 7. Check logs:
+#    sudo tail -f /var/log/frp/frps.log
+#
+# 8. Access dashboard (via SSH tunnel):
+#    ssh -L 7500:localhost:7500 user@your-server
+#    Then visit http://localhost:7500
+#

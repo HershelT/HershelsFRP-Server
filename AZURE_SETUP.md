@@ -255,15 +255,11 @@ Or copy-paste the contents from the files in this directory.
 ### Step 3: Generate Secure Tokens
 
 ```bash
-# Generate auth token for FRP
+# Generate auth and API tokens (they should match)
 echo "FRP Auth Token:"
 openssl rand -base64 32
 
-# Generate API token for ask server
-echo "API Token:"
-openssl rand -base64 32
-
-# Save these tokens! You'll need them.
+# Save this token! You'll need them.
 ```
 
 ### Step 4: Edit Configuration Files
@@ -336,7 +332,7 @@ Type=simple
 User=nobody
 WorkingDirectory=/opt/hershelsfrp
 Environment="NODE_ENV=production"
-Environment="API_TOKEN=YOUR_GENERATED_API_TOKEN"
+Environment="API_TOKEN=YOUR_GENERATED_API_TOKEN-should-match-frp-token" 
 Environment="DATA_DIR=/var/lib/hershelsfrp"
 ExecStart=/usr/bin/node /opt/hershelsfrp/ask-server.js
 Restart=always

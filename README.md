@@ -147,7 +147,7 @@ The FRP server configuration. Key settings:
 subDomainHost = "tunnel.hershel.dev"
 
 # CHANGE THIS! Generate with: openssl rand -base64 32
-auth.token = "CHANGE-ME-TO-A-SECURE-RANDOM-TOKEN"
+token = "CHANGE-ME-TO-A-SECURE-RANDOM-TOKEN" #Save this for the api token as well!
 
 # Security limits
 transport.maxPoolCount = 5       # Max connections per client
@@ -180,18 +180,19 @@ Security endpoint that prevents SSL certificate abuse. Features:
 - **API**: Allows VS Code extension to register new subdomains
 
 Set API token via environment variable:
+#Make sure it is the same as the frp token
 ```bash
-export API_TOKEN="your-secure-token"
+export API_TOKEN="your-secure-token" 
 ```
 
 ## 🔒 Security Checklist
 
 Before going to production:
 
-- [ ] Change `auth.token` in `frps.toml`
-- [ ] Change `webServer.password` in `frps.toml`
+- [ ] Change `token` in `frps.toml`
+- [ ] Change `password` in `frps.toml`
 - [ ] Set `email` in `Caddyfile` to your real email
-- [ ] Set `API_TOKEN` in ask-server systemd service
+- [ ] Set `API_TOKEN` in ask-server systemd service (should match FRP token)
 - [ ] Enable UFW firewall (`sudo ufw enable`)
 - [ ] Disable password auth for SSH
 - [ ] Setup fail2ban for brute-force protection

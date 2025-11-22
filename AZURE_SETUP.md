@@ -274,8 +274,8 @@ openssl rand -base64 32
 sudo nano /etc/frp/frps.toml
 
 # Change these values:
-# 1. auth.token = "YOUR_GENERATED_FRP_TOKEN"
-# 2. webServer.password = "YOUR_DASHBOARD_PASSWORD"
+# 1. token = "YOUR_GENERATED_FRP_TOKEN"
+# 2. password = "YOUR_DASHBOARD_PASSWORD"
 ```
 
 #### Edit Caddyfile

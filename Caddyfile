@@ -16,10 +16,6 @@
         # Ask endpoint to prevent certificate abuse
         # This checks if a subdomain is authorized before issuing a cert
         ask http://localhost:9000/check-subdomain
-
-        # Rate limiting to prevent abuse
-        interval 2m  # Only check every 2 minutes for same domain
-        burst 5      # Allow burst of 5 requests
     }
 
     # Optional: Enable admin API for monitoring
@@ -95,7 +91,7 @@
 # Main domain - shows info page or redirects
 tunnel.hershel.dev {
     # Return a helpful message for people hitting the base domain
-    respond <<HTML
+    respond 200 <<HTML
         <!DOCTYPE html>
         <html>
         <head>
@@ -126,7 +122,7 @@ tunnel.hershel.dev {
             </style>
         </head>
         <body>
-            <h1>🚀 HershelsFRP Tunnel Service</h1>
+            <h1>HershelsFRP Tunnel Service</h1>
             <div class="box">
                 <p><strong>This is the HershelsFRP tunnel server.</strong></p>
                 <p>To create tunnels, you need to:</p>
@@ -145,11 +141,16 @@ tunnel.hershel.dev {
                 Powered by <a href="https://github.com/fatedier/frp" style="color: #38bdf8;">FRP</a> +
                 <a href="https://caddyserver.com" style="color: #38bdf8;">Caddy</a>
             </p>
+            <div class="box" style="background: #334155; border-left-color: #f472b6;">
+                <h2> Please visit HershelsFRP GitHub for full setup instructions! </h2>
+                <p><a href="https://https://github.com/your-username/hershels-frp-tunnel" style="color: #f472b6;">
+                HershelsFRP Documentation</a></p>
+            </div>
         </body>
         </html>
     HTML
-    200
 
+    header Content-Type text/html
     # Alternative: Redirect to documentation
     # redir https://github.com/your-username/hershels-frp-tunnel
 }

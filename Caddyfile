@@ -15,7 +15,7 @@
     on_demand_tls {
         # Ask endpoint to prevent certificate abuse
         # This checks if a subdomain is authorized before issuing a cert
-        ask http://localhost:9000/check-subdomain
+        ask http://localhost:9000/ask
     }
 
     # Optional: Enable admin API for monitoring

@@ -124,7 +124,7 @@ const server = http.createServer((req, res) => {
     }
 
     // Caddy on-demand TLS ask endpoint
-    if (url.pathname === '/check-subdomain') {
+    if (url.pathname === '/ask') {
         const domain = url.searchParams.get('domain');
 
         if (!domain) {
@@ -309,7 +309,7 @@ server.listen(PORT, HOST, () => {
     console.log('Endpoints:');
     console.log('  GET  /health               - Health check');
     console.log('  GET  /stats                - Statistics');
-    console.log('  GET  /check-subdomain      - Caddy on-demand TLS check');
+    console.log('  GET  /ask                  - Caddy on-demand TLS check');
     console.log('  POST /register-subdomain   - Register new subdomain');
     console.log('  POST /unregister-subdomain - Remove subdomain');
     console.log('');

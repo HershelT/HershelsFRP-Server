@@ -16,6 +16,7 @@
  */
 
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
@@ -50,6 +51,53 @@ const rateLimits = new Map();
 // Request counter for monitoring
 let requestCount = 0;
 let deniedCount = 0;
+
+// ============================================================
+// Platform API Integration
+// ============================================================
+
+/**
+ * Call the platform API to check if a tunnel exists
+ */
+function checkTunnelWithPlatform(subdomain, callback) {
+    const options = {
+        hostname: 'localhost',
+        port: 3000,
+        path: `/api/internal/tunnel/${subdomain}`,
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
+
+    const req = http.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+            data += chunk;
+        });
+
+        res.on('end', () => {
+            try {
+                const response = JSON.parse(data);
+                callback(null, response);
+            } catch (error) {
+                callback(error, null);
+            }
+        });
+    });
+
+    req.on('error', (error) => {
+        callback(error, null);
+    });
+
+    req.setTimeout(2000, () => {
+        req.destroy();
+        callback(new Error('Request timeout'), null);
+    });
+
+    req.end();
+}
 
 // ============================================================
 // Persistence Functions
@@ -146,32 +194,40 @@ const server = http.createServer((req, res) => {
         }
         rateLimits.set(subdomain, Date.now());
 
-        // Check whitelist or auto-allow valid patterns
-        const isExplicitlyAllowed = allowedSubdomains.has(subdomain);
+        // Check with platform API first (for active tunnels)
+        checkTunnelWithPlatform(subdomain, (error, platformResponse) => {
+            let allowedByPlatform = false;
+            let allowedByWhitelist = allowedSubdomains.has(subdomain);
+            let allowedByPattern = /^[a-z0-9]+(-[a-z0-9]+){2,}$/.test(subdomain);
 
-        // Auto-allow subdomains matching pattern: username-project-role
-        // Pattern requires at least 2 hyphens (3+ parts) to prevent abuse
-        // Examples: alice-myapp-api, hershelt-hershelia-yjs-server
-        const isValidPattern = /^[a-z0-9]+(-[a-z0-9]+){2,}$/.test(subdomain);
-
-        if (isExplicitlyAllowed || isValidPattern) {
-            // Auto-register valid patterns for persistence
-            if (!isExplicitlyAllowed && isValidPattern) {
-                allowedSubdomains.add(subdomain);
-                saveSubdomains();
-                console.log(`🔓 Auto-allowed and registered: ${domain} (${subdomain}) - matches valid pattern`);
-            } else {
-                console.log(`✅ Allowed: ${domain} (${subdomain})`);
+            // If platform API is available and tunnel exists, allow it
+            if (!error && platformResponse && platformResponse.success) {
+                allowedByPlatform = true;
+                console.log(`✅ Allowed by platform: ${domain} (${subdomain}) - active tunnel for ${platformResponse.tunnel.username}`);
             }
 
-            res.writeHead(200, { 'Content-Type': 'text/plain' });
-            res.end('OK');
-        } else {
-            deniedCount++;
-            res.writeHead(403, { 'Content-Type': 'text/plain' });
-            res.end('Forbidden - Subdomain not authorized');
-            console.log(`❌ Denied: ${domain} (${subdomain}) - not in whitelist and doesn't match pattern`);
-        }
+            // Determine if subdomain should be allowed
+            const isAllowed = allowedByPlatform || allowedByWhitelist || allowedByPattern;
+
+            if (isAllowed) {
+                // Auto-register valid patterns for persistence (backwards compatibility)
+                if (!allowedByWhitelist && allowedByPattern) {
+                    allowedSubdomains.add(subdomain);
+                    saveSubdomains();
+                    console.log(`🔓 Auto-allowed and registered: ${domain} (${subdomain}) - matches valid pattern`);
+                } else if (allowedByWhitelist) {
+                    console.log(`✅ Allowed by whitelist: ${domain} (${subdomain})`);
+                }
+
+                res.writeHead(200, { 'Content-Type': 'text/plain' });
+                res.end('OK');
+            } else {
+                deniedCount++;
+                res.writeHead(403, { 'Content-Type': 'text/plain' });
+                res.end('Forbidden - Subdomain not authorized');
+                console.log(`❌ Denied: ${domain} (${subdomain}) - not in platform, whitelist, or pattern match`);
+            }
+        });
 
         return;
     }

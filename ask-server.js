@@ -146,16 +146,31 @@ const server = http.createServer((req, res) => {
         }
         rateLimits.set(subdomain, Date.now());
 
-        // Check whitelist
-        if (allowedSubdomains.has(subdomain)) {
+        // Check whitelist or auto-allow valid patterns
+        const isExplicitlyAllowed = allowedSubdomains.has(subdomain);
+
+        // Auto-allow subdomains matching pattern: username-project-role
+        // Pattern requires at least 2 hyphens (3+ parts) to prevent abuse
+        // Examples: alice-myapp-api, hershelt-hershelia-yjs-server
+        const isValidPattern = /^[a-z0-9]+(-[a-z0-9]+){2,}$/.test(subdomain);
+
+        if (isExplicitlyAllowed || isValidPattern) {
+            // Auto-register valid patterns for persistence
+            if (!isExplicitlyAllowed && isValidPattern) {
+                allowedSubdomains.add(subdomain);
+                saveSubdomains();
+                console.log(`🔓 Auto-allowed and registered: ${domain} (${subdomain}) - matches valid pattern`);
+            } else {
+                console.log(`✅ Allowed: ${domain} (${subdomain})`);
+            }
+
             res.writeHead(200, { 'Content-Type': 'text/plain' });
             res.end('OK');
-            console.log(`✅ Allowed: ${domain} (${subdomain})`);
         } else {
             deniedCount++;
             res.writeHead(403, { 'Content-Type': 'text/plain' });
             res.end('Forbidden - Subdomain not authorized');
-            console.log(`❌ Denied: ${domain} (${subdomain} not in whitelist)`);
+            console.log(`❌ Denied: ${domain} (${subdomain}) - not in whitelist and doesn't match pattern`);
         }
 
         return;
